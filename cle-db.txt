@@ -1,0 +1,11 @@
+//superuser postgres
+utilisateur: postgres
+mot de pass: Dekkway2025
+
+//base de donné
+utilisateur: dekkway_user 
+mot de pass: Dekkway2025
+
+//django administrateur
+utilisateur: dekkway_superuser
+mot de pass: Dekkway2025

@@ -1,0 +1,105 @@
+1. Amérique du Nord
+
+📍 Point Principal : Statue de la Liberté, New York, USA
+Coordonnées : (40.6892, -74.0445)
+
+2. Europe
+
+📍 Point Principal : Tour Eiffel, Paris, France
+Coordonnées : (48.8584, 2.2945)
+
+3. Afrique
+
+📍 Point Principal : Pyramide de Khéops, Gizeh, Égypte
+Coordonnées : (29.9792, 31.1342)
+
+# Recherche des logements les plus proches d'un point principal
+http://127.0.0.1:8000/logements/?lat=14.692&lng=-17.446&rayon=10
+
+# Point Principal 1
+http://127.0.0.1:8000/logements/?lat=40.6892&lng=-74.0445
+
+
+# Point Principal 2
+http://127.0.0.1:8000/logements/?lat=48.8584&lng=2.2945
+
+
+# Point Principal 3
+http://127.0.0.1:8000/logements/?lat=29.9792&lng=31.1342
+
+
+# Filtrer les logements par différents critères
+
+# 1. Filtrer par type de logement (exemple : appartement)
+GET http://127.0.0.1:8000/1/logements/?type=appartement
+
+# 2. Filtrer par fourchette de prix (exemple : entre 200.000 et 500.000)
+GET http://127.0.0.1:8000/logements/?prix_min=200000&prix_max=500000
+
+# 3. Filtrer par nombre de chambres (exemple : 3 chambres)
+GET http://127.0.0.1:8000/logements/?nombre_de_chambres=3
+
+
+# 5. Filtrer par région (exemple : Thiès)
+GET http://127.0.0.1:8000/logements/?region=Thies
+
+# 6. Filtrer par équipements (exemple : piscine)
+GET http://127.0.0.1:8000/logements/?equipements=piscine:true
+
+# Combiner plusieurs filtres
+# Exemple : appartements à Dakar avec piscine, 3 chambres, prix entre 300.000 et 700.000
+GET http://127.0.0.1:8000/rech-logements/?type=Appartement&region=Dakar&nombre_de_chambres=3&prix_min=100000&prix_max=700000&equipements=piscine:true,climatisation:false
+PUT http://127.0.0.1:8000/rech-logements/1/?type=Appartement&region=Dakar&nombre_de_chambres=3&prix_min=100000&prix_max=700000&equipements=piscine:true,climatisation:false
+
+
+<<<<<<< HEAD
+
+=======
+#####recherche naturel#####
+http://127.0.0.1:8000/rech-logements/?search=maison 2 chambre  à dakar  entre 100000 et 200000 avec wifi climatisation sans piscine
+http://127.0.0.1:8000rech-logements/?search=maison deux chambre  à dakar  entre 100000 et 200000 avec wifi climatisation sans piscine
+>>>>>>> backend-develop-recherche
+
+
+from django.db.models import F, FloatField
+from django.db.models.functions import Radians, Sin, Cos, Sqrt
+from django.db.models.expressions import Func, ExpressionWrapper
+from math import radians, cos
+
+class LogementListCreateView(generics.ListCreateAPIView):
+    # ... autres parties de la vue ...
+
+    def haversine_sql(self, lat, lng):
+        """ Génère une expression SQL pour calculer la distance Haversine corrigée """
+        lat_rad = Radians(F('latitude'))
+        lng_rad = Radians(F('longitude'))
+        input_lat_rad = radians(lat)
+        input_lng_rad = radians(lng)
+
+        delta_lat = lat_rad - input_lat_rad
+        delta_lng = lng_rad - input_lng_rad
+
+        # Division des deltas par 2
+        delta_lat_half = ExpressionWrapper(delta_lat / 2.0, output_field=FloatField())
+        delta_lng_half = ExpressionWrapper(delta_lng / 2.0, output_field=FloatField())
+
+        # Calcul des sinus carrés
+        sin_delta_lat_half = Func(delta_lat_half, function='SIN') ** 2
+        sin_delta_lng_half = Func(delta_lng_half, function='SIN') ** 2
+
+        # Calcul des cosinus
+        cos_lat = Func(lat_rad, function='COS')
+        cos_input_lat = cos(input_lat_rad)
+        cos_product = cos_lat * cos_input_lat
+
+        # Terme a de la formule Haversine
+        a = sin_delta_lat_half + cos_product * sin_delta_lng_half
+
+        # Calcul de c = 2 * atan2(sqrt(a), sqrt(1 - a))
+        sqrt_a = Func(a, function='SQRT')
+        sqrt_1_minus_a = Func(1.0 - a, function='SQRT')
+        atan2_expr = Func(sqrt_a, sqrt_1_minus_a, function='ATAN2')
+        c = 2.0 * atan2_expr
+
+        # Distance en kilomètres
+        return 6371.0 * c

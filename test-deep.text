@@ -1,0 +1,193 @@
+**Document de Test d'API avec Thunder Client**  
+**Projet : Dekkway**  
+
+---
+
+### **Configuration de Base**  
+- **URL de base** : `http://localhost:8000`  
+- **Headers communs** :  
+  ```  
+  Content-Type: application/json  
+  Authorization: Token <VOTRE_TOKEN>  
+  ```  
+
+---
+
+### **Endpoints Principaux**  
+
+---
+
+#### **1. Inscription d'un Locataire**  
+- **Méthode** : POST  
+- **URL** : `/loca-inscription/`  
+- **Headers** :  
+  ```  
+  Content-Type: application/json  
+  ```  
+- **Body (JSON)** :  
+  ```json  
+  {
+    "username": "locataire_test",
+    "email": "test@example.com",
+    "password": "Test1234!",
+    "nom": "Dupont",
+    "prenom": "Jean",
+    "telephone": "+221771234567",
+    "date_de_naissance": "2000-01-01"
+  }
+  ```  
+- **Réponse Attendue (201)** :  
+  ```json  
+  {
+    "message": "Compte créé avec succès",
+    "token": "945d1e8e7b7a1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+  }
+  ```  
+
+---
+
+#### **2. Connexion d'un Locataire**  
+- **Méthode** : POST  
+- **URL** : `/loca-connexion/`  
+- **Headers** :  
+  ```  
+  Content-Type: application/json  
+  ```  
+- **Body (JSON)** :  
+  ```json  
+  {
+    "email": "test@example.com",
+    "password": "Test1234!"
+  }
+  ```  
+- **Réponse Attendue (200)** :  
+  ```json  
+  {
+    "message": "Connexion réussie",
+    "token": "945d1e8e7b7a1b1b1b1b1b1b1b1b1b1b1b1b1"
+  }
+  ```  
+
+---
+
+#### **3. Création d'un Logement (avec Médias)**  
+- **Méthode** : POST  
+- **URL** : `/details-logements/`  
+- **Headers** :  
+  ```  
+  Content-Type: multipart/form-data  
+  Authorization: Token <VOTRE_TOKEN>  
+  ```  
+- **Body (form-data)** :  
+  ```
+  type: Appartement  
+  description: Appartement moderne avec vue mer  
+  region: Dakar  
+  quartier: Almadies  
+  prix: 300000  
+  nombre_de_chambres: 3  
+  latitude: 14.764943  
+  longitude: -17.416587  
+  equipements: {"wifi": true, "piscine": true}  
+  medias[0][type]: image  
+  medias[0][fichier]: @/chemin/vers/baniere.jpg  
+  medias[1][type]: image  
+  medias[1][fichier]: @/chemin/vers/salon.jpg  
+  ```  
+- **Réponse Attendue (201)** :  
+  ```json  
+  {
+    "type": "Appartement",
+    "description": "Appartement moderne avec vue mer",
+    "region": "Dakar",
+    "quartier": "Almadies",
+    "prix": 300000,
+    "medias": [
+      {"fichier": "/media/logements/baniere.jpg", "type": "image"},
+      {"fichier": "/media/logements/salon.jpg", "type": "image"}
+    ]
+  }
+  ```  
+
+---
+
+#### **4. Recherche de Logements**  
+- **Méthode** : GET  
+- **URL** : `/rech-logements/?lat=14.716677&lng=-17.467686&rayon=10`  
+- **Réponse Attendue (200)** :  
+  ```json  
+  [
+    {
+      "id": 1,
+      "type": "Appartement",
+      "region": "Dakar",
+      "quartier": "Almadies",
+      "prix": 300000,
+      "banniere": "/media/logements/baniere.jpg"
+    }
+  ]
+  ```  
+
+---
+
+#### **5. Téléversement d'un Média**  
+- **Méthode** : POST  
+- **URL** : `/medias/`  
+- **Headers** :  
+  ```  
+  Content-Type: multipart/form-data  
+  Authorization: Token <VOTRE_TOKEN>  
+  ```  
+- **Body (form-data)** :  
+  ```
+  logement: 1  
+  type: image  
+  fichier: @/chemin/vers/cuisine.jpg  
+  ```  
+- **Réponse Attendue (201)** :  
+  ```json  
+  {
+    "id": 3,
+    "logement": 1,
+    "fichier": "/media/logements/cuisine.jpg",
+    "type": "image"
+  }
+  ```  
+
+---
+
+### **Cas de Test de Validation**  
+
+1. **Tentative de création de logement avec 2 vidéos** :  
+   - **Body** : Ajouter deux médias de type `video`  
+   - **Attendu** : Erreur 400 avec message *"Un seul vidéo autorisé par logement"*.  
+
+2. **Recherche sans paramètres géographiques** :  
+   - **URL** : `/rech-logements/`  
+   - **Attendu** : Liste de tous les logements.  
+
+3. **Mise à jour d'un média existant** :  
+   - **Méthode** : PATCH  
+   - **URL** : `/medias/3/`  
+   - **Body** : `{"type": "video"}`  
+   - **Attendu** : Erreur 400 si une vidéo existe déjà.  
+
+---
+
+### **Configuration Thunder Client**  
+1. Créer un environnement avec :  
+   ```  
+   {
+     "base_url": "http://localhost:8000",
+     "token": "<COLLER_LE_TOKEN_ICI>"
+   }
+   ```  
+2. Dans les requêtes, utiliser :  
+   - **Headers** : `Authorization: Token {{token}}`  
+   - **URLs** : `{{base_url}}/endpoint`  
+
+--- 
+
+**Notes** :  
+- Pour les fichiers (`multipart/form-data`), utiliser l’onglet *Form* dans Thunder Client.  
+- Tester les permissions (ex: accès sans token doit retourner 401).

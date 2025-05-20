@@ -1,0 +1,168 @@
+import re
+import django_filters
+from django.contrib.postgres.search import SearchVector, SearchQuery, SearchRank
+from django.db import models
+from django.db.models import Q
+from .models import Logement
+
+class LogementFilter(django_filters.FilterSet):
+    # Filtre de base pour le type (recherche insensible à la casse)
+    type = django_filters.CharFilter(
+        field_name='type', 
+        lookup_expr='icontains',
+        label="Type de logement (ex: Studio, Maison)"
+    )
+    
+    # Filtre pour la durée de location
+    duree = django_filters.CharFilter(
+        field_name='duree',
+        lookup_expr='iexact',
+        label="Durée de location (ex: courte durée, longue durée)"
+    )
+    
+    # Filtres numériques pour le prix
+    prix_min = django_filters.NumberFilter(
+        field_name='prix', 
+        lookup_expr='gte',
+        label="Prix minimum"
+    )
+    prix_max = django_filters.NumberFilter(
+        field_name='prix', 
+        lookup_expr='lte',
+        label="Prix maximum"
+    )
+    
+    # Filtre exact pour le nombre de chambres
+    nombre_de_chambres = django_filters.NumberFilter(
+        label="Nombre de chambres exact (ex: 3)"
+    )
+    
+    # Filtre de région (recherche insensible à la casse)
+    region = django_filters.CharFilter(
+        field_name='region', 
+        lookup_expr='icontains',
+        label="Région ou ville (ex: Dakar)"
+    )
+    
+    # Ajout d'un filtre pour le quartier
+    quartier = django_filters.CharFilter(
+        field_name='quartier',
+        lookup_expr='icontains',
+        label="Quartier (ex: Medina, Yoff)"
+    )
+    
+    # Filtre personnalisé pour les équipements
+    equipements = django_filters.CharFilter(
+        method='filter_equipements',
+        label="Équipements (format: equipement:true/false, ex: wifi:true,piscine:false)"
+    )
+    
+    # Filtre de recherche naturelle
+    search = django_filters.CharFilter(
+        method='filter_natural_search',
+        label="Recherche naturelle (ex: 'Studio pas cher à Dakar avec wifi')"
+    )
+
+    def filter_equipements(self, queryset, name, value):
+        """
+        Fonction personnalisée pour filtrer les équipements.
+        """
+        filters = {}
+        for eq_pair in value.split(','):
+            key, val = eq_pair.split(':')
+            filters[f"equipements__{key.strip()}"] = val.strip().lower() in ['true', 'vrai', '1', 'oui']
+        return queryset.filter(**filters)
+    
+    
+    def filter_natural_search(self, queryset, name, value):
+        search_query = value.strip()
+        remaining_query = search_query
+
+        # 1. Extraction de la localisation (version corrigée)
+        location_match = re.search(r'\b(?:à|a|dans)\s+([^\d,]+?)(?=\s|$)', remaining_query, re.IGNORECASE)
+        location_part = None
+        if location_match:
+            location_part = location_match.group(1).strip()
+            remaining_query = remaining_query.replace(location_match.group(0), '', 1).strip()  # Correction ici
+
+        # 2. Extraction des équipements 
+        equipments = []
+        equipment_matches = re.finditer(r'\b(avec|sans)\s+([^,]+?)(?=\s+avec|\s+sans|\s+\d|$)', remaining_query, re.IGNORECASE)
+        
+        for match in equipment_matches:
+            operator, eqs = match.groups()
+            for eq in re.split(r'\s+et\s+|\s+', eqs.strip()):
+                if eq:
+                    equipments.append((eq.strip().lower(), operator.lower() == 'avec'))
+            remaining_query = remaining_query.replace(match.group(0), '', 1).strip()
+
+        # 3. Extraction du nombre de chambres
+        nombre_de_chambres = None
+        chambres_match = re.search(r'\b(\d+|une?|deux|trois|quatre|cinq|six|sept|huit|neuf|dix)\s+chambres?\b', remaining_query, re.IGNORECASE)
+        if chambres_match:
+            number = chambres_match.group(1)
+            nombre_de_chambres = int(number) if number.isdigit() else {
+                'un': 1, 'une': 1, 'deux': 2, 'trois': 3, 'quatre': 4,
+                'cinq': 5, 'six': 6, 'sept': 7, 'huit': 8, 'neuf': 9, 'dix': 10
+            }.get(number.lower(), None)
+            remaining_query = remaining_query.replace(chambres_match.group(0), '', 1).strip()
+
+        # 4. Extraction des prix
+        prix_min = prix_max = None
+        if match := re.search(r'entre\s+(\d+)\s+et\s+(\d+)', remaining_query, re.IGNORECASE):
+            prix_min, prix_max = map(int, match.groups())
+            remaining_query = remaining_query.replace(match.group(0), '', 1).strip()
+        elif match := re.search(r'moins\s+de\s+(\d+)', remaining_query, re.IGNORECASE):
+            prix_max = int(match.group(1))
+            remaining_query = remaining_query.replace(match.group(0), '', 1).strip()
+        elif match := re.search(r'plus\s+de\s+(\d+)', remaining_query, re.IGNORECASE):
+            prix_min = int(match.group(1))
+            remaining_query = remaining_query.replace(match.group(0), '', 1).strip()
+
+        # 5. Application des filtres
+        if location_part:
+            queryset = queryset.filter(
+                Q(region__unaccent__icontains=location_part) |
+                Q(quartier__unaccent__icontains=location_part)
+            )
+
+        for eq, val in equipments:
+            queryset = queryset.filter(**{f'equipements__{eq}': val})
+
+        if prix_min is not None:
+            queryset = queryset.filter(prix__gte=prix_min)
+        if prix_max is not None:
+            queryset = queryset.filter(prix__lte=prix_max)
+        if nombre_de_chambres is not None:
+            queryset = queryset.filter(nombre_de_chambres=nombre_de_chambres)
+
+        # 6. Recherche plein texte
+        remaining_query = re.sub(r'\s+', ' ', remaining_query).strip()
+        if remaining_query:
+            vector = SearchVector(
+                'type',
+                'description',
+                'quartier',
+                'region',
+                'titre',
+                config='french'
+            )
+            query = SearchQuery(remaining_query, config='french')
+            queryset = queryset.annotate(search=vector, rank=SearchRank(vector, query))\
+                    .filter(search=query)\
+                    .order_by('-rank')
+
+        return queryset
+    
+       
+
+    class Meta:
+        model = Logement
+        fields = ['type', 'duree', 'prix_min', 'prix_max', 'nombre_de_chambres', 'region', 'quartier']
+        filter_overrides = {
+            models.JSONField: {
+                'filter_class': django_filters.CharFilter,
+                'extra': lambda f: {'method': 'filter_equipements'}
+            }
+        }
+

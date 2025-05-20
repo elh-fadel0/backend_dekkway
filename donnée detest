@@ -1,0 +1,41 @@
+{
+  "bailleurs": [
+    {
+      "username": "bailleur123",
+      "nom": "Dupont",
+      "prenom": "Jean",
+      "email": "jean.dupont@example.com",
+      "adresse": "15 Rue des Logements, Paris",
+      "telephone": "0612345678",
+      "password": "motdepassefort123",
+      "groups": [],  
+      "user_permissions": []
+    }
+  ],
+  "locataires": [
+    {
+      "username": "locataire456",
+      "nom": "Martin",
+      "prenom": "Sophie",
+      "email": "sophie.martin@example.com",
+      "adresse": "25 Avenue des Résidences, Lyon",
+      "telephone": "0698765432",
+      "password": "motdepassefort456",
+      "groups": [],  
+      "user_permissions": []
+    }
+  ],
+  "administrateurs": [
+    {
+      "username": "admin001",
+      "nom": "Lemoine",
+      "prenom": "Paul",
+      "email": "paul.lemoine@example.com",
+      "adresse": "1 Rue de l'Administration, Marseille",
+      "telephone": "0678901234",
+      "password": "adminpassword789",
+      "groups": [],  
+      "user_permissions": []
+    }
+  ]
+}
