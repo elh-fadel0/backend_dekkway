@@ -120,9 +120,9 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'Dekkway2025',
-        'HOST': 'db.hqedayslnabmwbegdneu.supabase.co',
+        'USER': 'dekkway_db_user',
+        'PASSWORD': 'TOXFA2tZWCjJ3qQ3OYO8ebomkngNPBx0',
+        'HOST': 'dpg-d0mjtcm3jp1c738dp1p0-a',
         'PORT': '5432',
     }
 }
