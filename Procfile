@@ -1,1 +1,1 @@
-web: gunicorn dekkway.wsgi
+web: gunicorn dekkway.dekkway.wsgi
