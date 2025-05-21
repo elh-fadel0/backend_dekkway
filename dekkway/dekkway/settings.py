@@ -118,10 +118,10 @@ WSGI_APPLICATION = 'dekkway.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'dekkway_db',
-        'USER': 'dekkway_user',
+        'NAME': 'postgres',
+        'USER': 'postgres',
         'PASSWORD': 'Dekkway2025',
-        'HOST': 'localhost',
+        'HOST': 'db.hqedayslnabmwbegdneu.supabase.co',
         'PORT': '5432',
     }
 }
