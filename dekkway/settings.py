@@ -1,3 +1,4 @@
+
 """
 Django settings for dekkway project.
 
@@ -37,7 +38,7 @@ SECRET_KEY = 'django-insecure-ws+3^4c9*3c)7v3b8-+jwjf$jissmn3rw-jcvi93%+_e*7mgy6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['backend-dekkway.onrender.com', 'localhost', '127.0.0.1']
+ALLOWED_HOSTS = []
 
 
 # Application definition
@@ -80,14 +81,12 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     "corsheaders.middleware.CorsMiddleware",
-    'whitenoise.middleware.WhiteNoiseMiddleware',
 ]
 
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",  # URL de ton frontend React/Next.js
-    "http://172.17.96.1:3000",
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -117,16 +116,32 @@ WSGI_APPLICATION = 'dekkway.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.postgresql',
+#         'NAME': 'dekkway_db',
+#         'USER': 'dekkway_user',
+#         'PASSWORD': 'Dekkway2025',
+#         'HOST': 'localhost',
+#         'PORT': '5432',
+#     }
+# }
+
+
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'postgres',
-        'USER': 'postgres',
-        'PASSWORD': 'Dekkway2025',
-        'HOST': 'db.hqedayslnabmwbegdneu.supabase.co',
+        'NAME': 'neondb',
+        'USER': 'neondb_owner',
+        'PASSWORD': 'npg_1SHkAOnh0imL',
+        'HOST': 'ep-raspy-bird-a856eig3-pooler.eastus2.azure.neon.tech',
         'PORT': '5432',
+        'OPTIONS': {
+            'sslmode': 'require',
+        }
     }
 }
+
 
 
 # Password validation
